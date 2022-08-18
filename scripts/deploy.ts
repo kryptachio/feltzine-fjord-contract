@@ -1,9 +1,12 @@
 import { ethers } from "hardhat";
+import { getMerkleRoot } from "../merkle/merkle";
 
 async function main() {
+  const root = getMerkleRoot();
   const FjordDrop = await ethers.getContractFactory("FjordDrop");
   const fjordDrop = await FjordDrop.deploy(
-    "ipfs://bafybeiddblti7v4kmhda2neoggpr3jaikdz5rbp4xzzqqyjykotkmf45xy/"
+    "ipfs://bafybeiddblti7v4kmhda2neoggpr3jaikdz5rbp4xzzqqyjykotkmf45xy/",
+    `0x${root}`
   );
 
   await fjordDrop.deployed();
