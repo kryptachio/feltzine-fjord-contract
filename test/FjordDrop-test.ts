@@ -49,7 +49,9 @@ describe("FjordDrop", function () {
         const mroot = await fjordDrop.whiteListSaleMerkleRoot();
         console.log("mroot", mroot);
         const proof = getMerkleProof(owner.address);
-        await fjordDrop.mintWhitelisted(1, proof);
+        await fjordDrop.mintWhitelisted(1, proof, {
+          value: ethers.utils.parseEther("0.04"),
+        });
         expect(await fjordDrop.balanceOf(owner.address)).to.equal(1);
       });
     });
