@@ -7,6 +7,9 @@ import { getMerkleRoot } from "../merkle/merkle";
 describe("FjordDrop", function () {
   async function deployFjordDrop() {
     const root = getMerkleRoot();
+    //Price for whitelisted NFTs
+    let oneNFTPrice = ethers.utils.parseEther("0.02");
+    let twoNFTsPrice = ethers.utils.parseEther("0.04");
 
     const [owner, acc2, acc3, acc4] = await ethers.getSigners();
     const FjordDrop = await ethers.getContractFactory("FjordDrop");
@@ -14,7 +17,7 @@ describe("FjordDrop", function () {
       "ipfs://bafybeiddblti7v4kmhda2neoggpr3jaikdz5rbp4xzzqqyjykotkmf45xy/",
       `0x${root}`
     );
-    return { fjordDrop, owner, acc2, acc3, acc4 };
+    return { fjordDrop, owner, acc2, acc3, acc4, oneNFTPrice, twoNFTsPrice };
   }
 
   describe("Deployment", function () {
@@ -45,13 +48,19 @@ describe("FjordDrop", function () {
       //IMPLEMENT
       it("Should revert if all tokens were minted", async function () {});
       it("Should mint tokens to a whitelisted address", async function () {
-        const { fjordDrop, owner } = await loadFixture(deployFjordDrop);
+        const { fjordDrop, owner, twoNFTsPrice } = await loadFixture(
+          deployFjordDrop
+        );
         const mroot = await fjordDrop.whiteListSaleMerkleRoot();
         console.log("mroot", mroot);
         const proof = getMerkleProof(owner.address);
-        await fjordDrop.mintWhitelisted(1, proof, {
-          value: ethers.utils.parseEther("0.04"),
-        });
+        await fjordDrop.mintWhitelisted(
+          1,
+          proof
+          // {
+          //   value: twoNFTsPrice,
+          // }
+        );
         expect(await fjordDrop.balanceOf(owner.address)).to.equal(1);
       });
     });
