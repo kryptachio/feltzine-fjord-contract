@@ -4,6 +4,7 @@ pragma solidity ^0.8.14;
 //OpenZeppelin
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
+//import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 //AlchemistCoin
 import "@alchemist.wtf/token-extensions/contracts/Erc721BurningErc20OnMint.sol";
@@ -112,9 +113,11 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     {
         uint256 tokenId = mintCounter;
         uint256 totalMinted = mintPerWhitelistedWallet[msg.sender];
+        /*
         if (msg.value != PRICE_PER_WHITELIST_NFT * amount) {
             revert FJORD_InsufficientPayment();
         } else
+        */
          if (whitelistCounter + amount > WHITELIST_SUPPLY) {
             // Just to test - for now -. Probably wont happen in practice as we are
             // specifiying the total wl supply and max mint per wallet to be
@@ -134,6 +137,26 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
                 }
             }
         }
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override (Erc721BurningErc20OnMint) {
+        ERC721._beforeTokenTransfer(from, to, amount);
+        //check if it's a mint
+        /*
+        if (from == address(0) && to != address(0)) {
+            require(
+                erc20TokenAddress != address(0),
+                "erc20TokenAddress undefined"
+            );
+            uint256 balanceOfAddress = IERC20(erc20TokenAddress).balanceOf(to);
+            require(balanceOfAddress >= 1, "user does not hold a token");
+            ERC20Burnable(erc20TokenAddress).burnFrom(to, 1);
+        }
+        */
     }
 
 /*//////////////////////////////////////////////////////////////

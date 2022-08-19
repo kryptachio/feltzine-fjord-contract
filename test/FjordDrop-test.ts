@@ -47,7 +47,7 @@ describe("FjordDrop", function () {
     describe("Whitelist minting", function () {
       //IMPLEMENT
       it("Should revert if all tokens were minted", async function () {});
-      it("Should mint tokens to a whitelisted address", async function () {
+      it.only("Should mint tokens to a whitelisted address", async function () {
         const { fjordDrop, owner, twoNFTsPrice } = await loadFixture(
           deployFjordDrop
         );
