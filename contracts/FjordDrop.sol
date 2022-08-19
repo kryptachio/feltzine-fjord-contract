@@ -108,14 +108,14 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     function mintWhitelisted(uint256 amount, bytes32[] calldata merkleProof)
         public
         payable
-        onlyOwner
         isValidMerkleProof(merkleProof, whiteListSaleMerkleRoot)
     {
         uint256 tokenId = mintCounter;
         uint256 totalMinted = mintPerWhitelistedWallet[msg.sender];
         if (msg.value != PRICE_PER_WHITELIST_NFT * amount) {
             revert FJORD_InsufficientPayment();
-        } else if (whitelistCounter + amount > WHITELIST_SUPPLY) {
+        } else
+         if (whitelistCounter + amount > WHITELIST_SUPPLY) {
             // Just to test - for now -. Probably wont happen in practice as we are
             // specifiying the total wl supply and max mint per wallet to be
             // wl addresses number + max mint per wallet = total wl supply
