@@ -4,7 +4,6 @@ pragma solidity ^0.8.14;
 //OpenZeppelin
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
-//import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 //AlchemistCoin
 import "@alchemist.wtf/token-extensions/contracts/Erc721BurningErc20OnMint.sol";
