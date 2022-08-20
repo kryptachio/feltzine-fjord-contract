@@ -7,14 +7,16 @@ import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 //AlchemistCoin
 import "@alchemist.wtf/token-extensions/contracts/Erc721BurningErc20OnMint.sol";
+//utils
+import "hardhat/console.sol";
 
 /*//////////////////////////////////////////////////////////////
                         ERRORS
 //////////////////////////////////////////////////////////////*/
 
 error FJORD_TotalMinted();
-error FJORD_InsufficientPayment();
-error FJORD_MaxMintPerWhitelistWallet();
+error FJORD_InexactPayment();
+error FJORD_MaxMintExceeded();
 error FJORD_WhitelistMaxSupplyExceeded();
 
 /**
@@ -24,7 +26,7 @@ error FJORD_WhitelistMaxSupplyExceeded();
  */
 
 contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
-    
+
 /*//////////////////////////////////////////////////////////////
                         STATE VARIABLES
 //////////////////////////////////////////////////////////////*/
@@ -33,15 +35,13 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     uint16 public constant MAX_SUPPLY = 100;
     string public customBaseURI;
     address private payThroughSplits =
-        0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+        0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
 
     bytes32 public whiteListSaleMerkleRoot;
     uint256 private constant PRICE_PER_WHITELIST_NFT = 0.02 ether;
     uint32 private constant MAX_MINT_PER_WHITELIST_WALLET = 2;
     uint32 private constant WHITELIST_SUPPLY = 20;
-    uint16 public whitelistCounter;
-    mapping(address => uint256) public mintPerWhitelistedWallet;
-    mapping(address => bool) whiteListClaims;
+    mapping(address => uint32) public mintPerWhitelistedWallet;
 
 /*//////////////////////////////////////////////////////////////
                         INIT/CONSTRUCTOR
@@ -62,6 +62,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
 //////////////////////////////////////////////////////////////*/
 
     event MintedAnNFT(address indexed to, uint256 indexed tokenId);
+    event MintedCopper();
 
 /*//////////////////////////////////////////////////////////////
                         MODIFIERS
@@ -74,7 +75,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
                 root,
                 keccak256(abi.encodePacked(msg.sender))
             ),
-            "Address does not exist in list"
+            "Address is not whitelisted"
         );
         _;
     }
@@ -98,7 +99,8 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
             unchecked {
                 mintCounter++;
             }
-            emit MintedAnNFT(msg.sender, tokenId);
+            //this event fires just to test this specific function
+            emit MintedCopper();
             return tokenId;
         }
     }
@@ -109,6 +111,11 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         public
         payable
         isValidMerkleProof(merkleProof, whiteListSaleMerkleRoot)
+        //cache the current minted amount by the wallet address
+{       uint256 totalMinted = mintPerWhitelistedWallet[msg.sender];
+        if (msg.value != PRICE_PER_WHITELIST_NFT * amount) {
+            revert FJORD_InexactPayment();
+
     {
         uint256 tokenId = mintCounter;
         uint256 totalMinted = mintPerWhitelistedWallet[msg.sender];
@@ -124,15 +131,19 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
             revert FJORD_WhitelistMaxSupplyExceeded();
         } else if (totalMinted + amount > MAX_MINT_PER_WHITELIST_WALLET) {
             revert FJORD_MaxMintPerWhitelistWallet();
+
         } else {
-            mintPerWhitelistedWallet[msg.sender] += amount;
+            require(totalMinted + amount <= MAX_MINT_PER_WHITELIST_WALLET,
+                "Max mint exceeded");
             uint256 i;
             for (i = 0; i < amount; i++) {
+                // cache the minteCounter as the tokenId to mint
+                uint256 tokenId = mintCounter;
                 _mint(msg.sender, tokenId);
                 emit MintedAnNFT(msg.sender, tokenId);
                 unchecked {
                     mintCounter++;
-                    whitelistCounter++;
+                    mintPerWhitelistedWallet[msg.sender]++;
                 }
             }
         }
@@ -144,6 +155,22 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         uint256 amount
     ) internal virtual override (Erc721BurningErc20OnMint) {
         ERC721._beforeTokenTransfer(from, to, amount);
+
+        address fakeCopperAddress = 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65;
+        // console.log("transfer from: " , from, "to address" , to);
+        // check if it's a mint through the Copper's contract
+        if(from  == fakeCopperAddress) {
+            if (from == address(0) && to != address(0)) {
+                require(
+                    erc20TokenAddress != address(0),
+                    "erc20TokenAddress undefined"
+                );
+                console.log("inside Copper's override");
+                uint256 balanceOfAddress = IERC20(erc20TokenAddress).balanceOf(to);
+                require(balanceOfAddress >= 1, "user does not hold a token");
+                ERC20Burnable(erc20TokenAddress).burnFrom(to, 1);
+            }
+        }
         //check if it's a mint
         /*
         if (from == address(0) && to != address(0)) {
@@ -156,6 +183,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
             ERC20Burnable(erc20TokenAddress).burnFrom(to, 1);
         }
         */
+
     }
 
 /*//////////////////////////////////////////////////////////////
@@ -201,4 +229,6 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         uint256 balance = address(this).balance;
         Address.sendValue(payable(payThroughSplits), balance);
     }
+//Fallback
+    receive() external payable {}
 }
