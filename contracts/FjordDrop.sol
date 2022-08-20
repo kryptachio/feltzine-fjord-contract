@@ -168,7 +168,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         override
         returns (string memory)
     {
-        return string(abi.encodePacked(super.tokenURI(tokenId), ".json"));
+        return string(abi.encodePacked(super.tokenURI(tokenId)));
     }
 
     function totalSupply() public view returns (uint256) {
