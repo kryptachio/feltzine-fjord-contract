@@ -11,7 +11,7 @@ describe("FjordDrop", function () {
     let oneNFTPrice = ethers.utils.parseEther("0.02");
     let twoNFTsPrice = ethers.utils.parseEther("0.04");
     let threeNFTsPrice = ethers.utils.parseEther("0.06");
-
+    //
     const [owner, acc2, acc3, acc4, notWLAcc] = await ethers.getSigners();
     const FjordDrop = await ethers.getContractFactory("FjordDrop");
     const fjordDrop = await FjordDrop.deploy(
@@ -67,7 +67,7 @@ describe("FjordDrop", function () {
       it("Should revert if all tokens were minted", async function () {
         //CODE HERE
       });
-      it("TokenUri ends in '1.json' after first mint", async function () {
+      it("TokenUri ends in '1' after first mint", async function () {
         const { fjordDrop, acc3, oneNFTPrice } = await loadFixture(
           deployFjordDrop
         );
@@ -76,7 +76,9 @@ describe("FjordDrop", function () {
           value: oneNFTPrice,
         });
         const tokenUri = await fjordDrop.tokenURI(1);
-        expect(tokenUri.endsWith("1.json")).to.equal(true);
+        expect(tokenUri).to.be.equal(
+          "ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/1"
+        );
       });
 
       it("Whitelisted address can mint 1 and update both counters", async function () {
@@ -131,7 +133,6 @@ describe("FjordDrop", function () {
         const buyerNFTS = await fjordDrop.mintPerWhitelistedWallet(
           acc4.address
         );
-        console.log("buyerNFTS", buyerNFTS);
         expect(buyerNFTS).to.equal(2);
       });
       it("Reverts if address is not whitelisted ", async function () {
@@ -201,21 +202,23 @@ describe("FjordDrop", function () {
         deployFjordDrop
       );
       //testing with the whitelisted address and function
+      const provider = waffle.provider;
+      //balance before receiving ether
+      const contractBalanceBeforeReceivingEther = await provider.getBalance(
+        fjordDrop.address
+      );
+      const formatContractBalanceBeforeReceivingEther =
+        ethers.utils.formatEther(contractBalanceBeforeReceivingEther);
+      console.log(
+        "contractBalanceBeforeReceivingEther",
+        formatContractBalanceBeforeReceivingEther
+      );
       const proof = getMerkleProof(acc2.address);
       await fjordDrop.connect(acc2).mintWhitelisted(2, proof, {
         value: twoNFTsPrice,
       });
       //testing with the non whitelisted address and Copper mint function
       await fjordDrop.connect(acc4).mint(acc4.address);
-      const provider = waffle.provider;
-      //balance before receiving ether
-      const contractBalanceBeforeReceivingEther = await provider.getBalance(
-        fjordDrop.address
-      );
-      console.log(
-        "contractBalanceBeforeReceivingEther",
-        contractBalanceBeforeReceivingEther
-      );
       //sends ether to Fjord contract address
       await acc2.sendTransaction({
         to: fjordDrop.address,
