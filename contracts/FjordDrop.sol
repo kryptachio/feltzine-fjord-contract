@@ -138,7 +138,10 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         uint256 amount
     ) internal virtual override (Erc721BurningErc20OnMint) {
         ERC721._beforeTokenTransfer(from, to, amount);
-        address fakeCopperAddress = 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65;
+        address fakeCopperAddress = 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc;
+        console.log("from", from);
+        console.log("msg.sender", msg.sender);
+        console.log("checkWl",mintPerWhitelistedWallet[msg.sender]);
         // check if it's a mint through the Copper's contract
         if(from  == fakeCopperAddress) {
             if (from == address(0) && to != address(0)) {

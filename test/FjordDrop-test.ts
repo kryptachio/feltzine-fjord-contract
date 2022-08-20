@@ -12,7 +12,8 @@ describe("FjordDrop", function () {
     let twoNFTsPrice = ethers.utils.parseEther("0.04");
     let threeNFTsPrice = ethers.utils.parseEther("0.06");
     //
-    const [owner, acc2, acc3, acc4, notWLAcc] = await ethers.getSigners();
+    const [owner, acc2, acc3, acc4, notWLAcc, fakeCopperAddress] =
+      await ethers.getSigners();
     const FjordDrop = await ethers.getContractFactory("FjordDrop");
     const fjordDrop = await FjordDrop.deploy(
       "ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/",
@@ -28,6 +29,7 @@ describe("FjordDrop", function () {
       oneNFTPrice,
       twoNFTsPrice,
       threeNFTsPrice,
+      fakeCopperAddress,
     };
   }
 
@@ -55,11 +57,13 @@ describe("FjordDrop", function () {
         //CODE HERE
       });
       it("Should mint one NFT via Copper's contract and emit MintCopper event", async function () {
-        const { fjordDrop, notWLAcc } = await loadFixture(deployFjordDrop);
-        // NOTE: notWLAcc is not whitelisted and it calls the mint function
-        console.log("notWLAcc", notWLAcc.address);
+        const { fjordDrop, fakeCopperAddress } = await loadFixture(
+          deployFjordDrop
+        );
+        // NOTE: fakeCopperAddress is not whitelisted and it calls the mint function
+        console.log("fakeCopperAddress", fakeCopperAddress.address);
         await expect(
-          fjordDrop.connect(notWLAcc).mint(notWLAcc.address)
+          fjordDrop.connect(fakeCopperAddress).mint(fakeCopperAddress.address)
         ).to.emit(fjordDrop, "MintedCopper");
       });
     });
