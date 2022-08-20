@@ -64,11 +64,17 @@ describe("FjordDrop", function () {
       });
     });
     describe("Whitelist minting", function () {
+
       it("Should revert if all tokens were minted", async function () {
         //CODE HERE
       });
       it("TokenUri ends in '1.json' after first mint", async function () {
         const { fjordDrop, acc3, oneNFTPrice } = await loadFixture(
+
+      //IMPLEMENT
+      it("Should revert if all tokens were minted", async function () {});
+      it.only("Should mint tokens to a whitelisted address", async function () {
+        const { fjordDrop, owner, twoNFTsPrice } = await loadFixture(
           deployFjordDrop
         );
         const proof = getMerkleProof(acc3.address);
