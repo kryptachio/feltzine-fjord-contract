@@ -5,7 +5,7 @@ async function main() {
   const root = getMerkleRoot();
   const FjordDrop = await ethers.getContractFactory("FjordDrop");
   const fjordDrop = await FjordDrop.deploy(
-    "ipfs://bafybeiddblti7v4kmhda2neoggpr3jaikdz5rbp4xzzqqyjykotkmf45xy/",
+    "ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/",
     `0x${root}`
   );
 
