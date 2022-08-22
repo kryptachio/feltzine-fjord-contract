@@ -200,6 +200,17 @@ describe("FjordDrop", function () {
           "Ownable: caller is not the owner"
         );
       });
+      it("Royalities are 15%", async function () {
+        const { fjordDrop } = await loadFixture(deployFjordDrop);
+        const royalty = await fjordDrop.royaltyInfo(1, 100);
+        console.log(
+          "royaltyAmount:",
+          ethers.BigNumber.from(royalty.royaltyAmount).toString()
+        );
+        console.log("royaltyBenefitiary:", royalty.receiver);
+        expect(royalty.royaltyAmount).to.be.equal(15);
+        expect(royalty.receiver).to.be.equal(fjordDrop.address);
+      });
     });
     it("Should send all the balance to the payThroughSplits address", async function () {
       const { fjordDrop, acc3, acc2, twoNFTsPrice, acc4 } = await loadFixture(
