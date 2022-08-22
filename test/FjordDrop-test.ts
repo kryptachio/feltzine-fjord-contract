@@ -11,7 +11,6 @@ describe("FjordDrop", function () {
     let oneNFTPrice = ethers.utils.parseEther("0.02");
     let twoNFTsPrice = ethers.utils.parseEther("0.04");
     let threeNFTsPrice = ethers.utils.parseEther("0.06");
-    //
     const [owner, acc2, acc3, acc4, notWLAcc, fakeCopperAddress] =
       await ethers.getSigners();
     const FjordDrop = await ethers.getContractFactory("FjordDrop");
@@ -30,6 +29,23 @@ describe("FjordDrop", function () {
       twoNFTsPrice,
       threeNFTsPrice,
       fakeCopperAddress,
+    };
+  }
+  //DUMMY ERC20 CONTRACT
+  async function deployErc20Dummy() {
+    const [owner, user] = await ethers.getSigners();
+    const ERC20Dummy = await ethers.getContractFactory("ERC20Dummy");
+    const erc20Dummy = await ERC20Dummy.deploy(
+      "Main Token",
+      "MTKN",
+      owner.address,
+      100
+    );
+    await erc20Dummy.deployed();
+    return {
+      erc20Dummy,
+      owner,
+      user,
     };
   }
 
@@ -56,15 +72,32 @@ describe("FjordDrop", function () {
       it("Should revert if all tokens were minted", async function () {
         //CODE HERE
       });
-      it("Should mint one NFT via Copper's contract and emit MintCopper event", async function () {
+      it.only("Should mint one NFT via Copper's contract and emit MintCopper event", async function () {
+        //fakeCopperAddress is a random address - not whitelisted -
+        //just used to impersonate Copper
         const { fjordDrop, fakeCopperAddress } = await loadFixture(
           deployFjordDrop
         );
-        // NOTE: fakeCopperAddress is not whitelisted and it calls the mint function
-        console.log("fakeCopperAddress", fakeCopperAddress.address);
+        //given
+        const { erc20Dummy } = await loadFixture(deployErc20Dummy);
+        console.log(fakeCopperAddress.address);
+        await fjordDrop.setErc20TokenAddress(erc20Dummy.address);
+        await erc20Dummy.transfer(fakeCopperAddress.address, 1);
+        await erc20Dummy
+          .connect(fakeCopperAddress)
+          .approve(erc20Dummy.address, 1);
+        //user has erc20 tokens
+        expect(await erc20Dummy.balanceOf(fakeCopperAddress.address)).to.equal(
+          1
+        );
+
         await expect(
           fjordDrop.connect(fakeCopperAddress).mint(fakeCopperAddress.address)
         ).to.emit(fjordDrop, "MintedCopper");
+
+        expect(await erc20Dummy.balanceOf(fakeCopperAddress.address)).to.equal(
+          0
+        );
       });
     });
     describe("Whitelist minting", function () {

@@ -141,15 +141,15 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         //hardcode the Copper address that will be provided check if minting 
         //is happening through their site.
         address fakeCopperAddress = 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc;
- 
         // check if it's a mint through the Copper's contract
-        if(from  == fakeCopperAddress) {
+        if(to == fakeCopperAddress) {
             if (from == address(0) && to != address(0)) {
                 require(
                     erc20TokenAddress != address(0),
                     "erc20TokenAddress undefined"
                 );
                 console.log("inside Copper's override");
+                console.log("erc20TokenAddress: " , erc20TokenAddress);
                 uint256 balanceOfAddress = IERC20(erc20TokenAddress).balanceOf(to);
                 require(balanceOfAddress >= 1, "user does not hold a token");
                 ERC20Burnable(erc20TokenAddress).burnFrom(to, 1);
