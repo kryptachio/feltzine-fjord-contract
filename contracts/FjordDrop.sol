@@ -36,7 +36,8 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     string public customBaseURI;
     address private payThroughSplits =
         0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
-
+    //change for 0x2EdcA248f8492ec96EFC43aD4D1daf14A2866Deb before deployment
+    address private goerliCopperAddress = 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc;
     bytes32 public whiteListSaleMerkleRoot;
     uint256 private constant PRICE_PER_WHITELIST_NFT = 0.02 ether;
     uint32 private constant MAX_MINT_PER_WHITELIST_WALLET = 2;
@@ -87,7 +88,9 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     function setBaseURI(string memory customBaseURI_) external onlyOwner {
         customBaseURI = customBaseURI_;
     }
-
+    function setCopperAddress(address goerliCopperAddress_) external onlyOwner {
+        goerliCopperAddress = goerliCopperAddress_;
+    }
     /// @notice mint implementation interfacing w Erc721BurningErc20OnMint contract
 
     function mint(address to) public override nonReentrant returns (uint256) {
@@ -137,23 +140,11 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         address to,
         uint256 amount
     ) internal virtual override (Erc721BurningErc20OnMint) {
-        ERC721._beforeTokenTransfer(from, to, amount);
-        //hardcode the Copper address that will be provided check if minting 
-        //is happening through their site.
-        address fakeCopperAddress = 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc;
         // check if it's a mint through the Copper's contract
-        if(to == fakeCopperAddress) {
-            if (from == address(0) && to != address(0)) {
-                require(
-                    erc20TokenAddress != address(0),
-                    "erc20TokenAddress undefined"
-                );
-                console.log("inside Copper's override");
-                console.log("erc20TokenAddress: " , erc20TokenAddress);
-                uint256 balanceOfAddress = IERC20(erc20TokenAddress).balanceOf(to);
-                require(balanceOfAddress >= 1, "user does not hold a token");
-                ERC20Burnable(erc20TokenAddress).burnFrom(to, 1);
-            }
+        if(to == goerliCopperAddress) {
+            Erc721BurningErc20OnMint._beforeTokenTransfer(from, to, amount);
+        } else{
+            ERC721._beforeTokenTransfer(from, to, amount);
         }
     }
 

@@ -72,7 +72,7 @@ describe("FjordDrop", function () {
       it("Should revert if all tokens were minted", async function () {
         //CODE HERE
       });
-      it.only("Should mint one NFT via Copper's contract and emit MintCopper event", async function () {
+      it("Should mint one NFT via Copper's contract and emit MintCopper event", async function () {
         //fakeCopperAddress is a random address - not whitelisted -
         //just used to impersonate Copper
         const { fjordDrop, fakeCopperAddress } = await loadFixture(
@@ -85,12 +85,11 @@ describe("FjordDrop", function () {
         await erc20Dummy.transfer(fakeCopperAddress.address, 1);
         await erc20Dummy
           .connect(fakeCopperAddress)
-          .approve(erc20Dummy.address, 1);
+          .approve(fjordDrop.address, 1);
         //user has erc20 tokens
         expect(await erc20Dummy.balanceOf(fakeCopperAddress.address)).to.equal(
           1
         );
-
         await expect(
           fjordDrop.connect(fakeCopperAddress).mint(fakeCopperAddress.address)
         ).to.emit(fjordDrop, "MintedCopper");
