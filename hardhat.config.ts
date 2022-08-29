@@ -57,6 +57,7 @@ const config: HardhatUserConfig = {
       rinkeby: ETHERSCAN_API_KEY,
       ropsten: ETHERSCAN_API_KEY,
       mainnet: ETHERSCAN_API_KEY,
+      goerli: ETHERSCAN_API_KEY,
     },
   },
   gasReporter: {

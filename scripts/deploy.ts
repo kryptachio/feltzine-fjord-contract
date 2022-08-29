@@ -6,7 +6,8 @@ async function main() {
   const FjordDrop = await ethers.getContractFactory("FjordDrop");
   const fjordDrop = await FjordDrop.deploy(
     "ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/",
-    `0x${root}`
+    `0x${root}`,
+    5
   );
 
   await fjordDrop.deployed();

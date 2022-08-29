@@ -1,6 +1,7 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { getMerkleProof } from "../merkle/merkle";
 import { getMerkleRoot } from "../merkle/merkle";
 
@@ -16,8 +17,11 @@ describe("FjordDrop", function () {
     const FjordDrop = await ethers.getContractFactory("FjordDrop");
     const fjordDrop = await FjordDrop.deploy(
       "ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/",
-      `0x${root}`
+      `0x${root}`,
+      5
     );
+    //OWNER SETS THE END TIME TO 5MIN IN THE FUTURE
+    await fjordDrop.setEndDateWhitelist(60 * 5);
     return {
       fjordDrop,
       owner,
@@ -56,9 +60,9 @@ describe("FjordDrop", function () {
         "ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/"
       );
     });
-    it("Should start the mintCounter at 1", async function () {
+    it("Should start the mintCounter at 5", async function () {
       const { fjordDrop } = await loadFixture(deployFjordDrop);
-      expect(await fjordDrop.mintCounter()).to.equal(1);
+      expect(await fjordDrop.mintCounter()).to.equal(5);
     });
 
     it("Should set the right owner", async function () {
@@ -72,7 +76,7 @@ describe("FjordDrop", function () {
       it("Should revert if all tokens were minted", async function () {
         //CODE HERE
       });
-      it("Should mint one NFT via Copper's contract and emit MintCopper event", async function () {
+      it("Should mint one NFT via Copper's contract", async function () {
         //fakeCopperAddress is a random address - not whitelisted -
         //just used to impersonate Copper
         const { fjordDrop, fakeCopperAddress } = await loadFixture(
@@ -90,10 +94,7 @@ describe("FjordDrop", function () {
         expect(await erc20Dummy.balanceOf(fakeCopperAddress.address)).to.equal(
           1
         );
-        await expect(
-          fjordDrop.connect(fakeCopperAddress).mint(fakeCopperAddress.address)
-        ).to.emit(fjordDrop, "MintedCopper");
-
+        await fjordDrop.connect(fakeCopperAddress).mint();
         expect(await erc20Dummy.balanceOf(fakeCopperAddress.address)).to.equal(
           0
         );
@@ -103,20 +104,42 @@ describe("FjordDrop", function () {
       it("Should revert if all tokens were minted", async function () {
         //CODE HERE
       });
-      it("TokenUri ends in '1' after first mint", async function () {
+      it("TokenUri returns the correct tokenId after mint", async function () {
         const { fjordDrop, acc3, oneNFTPrice } = await loadFixture(
           deployFjordDrop
         );
         const proof = getMerkleProof(acc3.address);
-        await fjordDrop.connect(acc3).mintWhitelisted(1, proof, {
+        await fjordDrop.connect(acc3).whitelistMint(1, proof, {
           value: oneNFTPrice,
         });
-        const tokenUri = await fjordDrop.tokenURI(1);
+        const lastMintTokenId = await fjordDrop.mintCounter();
+        const tokenUri = await fjordDrop.tokenURI(lastMintTokenId);
         expect(tokenUri).to.be.equal(
-          "ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/1"
+          `ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/${lastMintTokenId}`
         );
       });
-
+      it("Whitelisted address can't mint if payment === price * amount", async function () {
+        const { fjordDrop, acc2 } = await loadFixture(deployFjordDrop);
+        const proof = getMerkleProof(acc2.address);
+        await expect(
+          fjordDrop.connect(acc2).whitelistMint(1, proof, {
+            value: ethers.utils.parseEther("0.0004"),
+          })
+        ).to.be.revertedWith("FJORD_InexactPayment");
+      });
+      it("Whitelisted address can't mint after the whitelist mint ends", async function () {
+        const { fjordDrop, acc2, oneNFTPrice } = await loadFixture(
+          deployFjordDrop
+        );
+        const endDate = await fjordDrop.whitelistEndDate();
+        const proof = getMerkleProof(acc2.address);
+        await time.increaseTo(endDate);
+        await expect(
+          fjordDrop.connect(acc2).whitelistMint(1, proof, {
+            value: oneNFTPrice,
+          })
+        ).to.be.revertedWith("FJORD_WhitelistMintEnded");
+      });
       it("Whitelisted address can mint 1 and update both counters", async function () {
         const { fjordDrop, acc2, oneNFTPrice } = await loadFixture(
           deployFjordDrop
@@ -124,13 +147,13 @@ describe("FjordDrop", function () {
         // const mroot = await fjordDrop.whiteListSaleMerkleRoot();
         // console.log("mroot", mroot);
         const proof = getMerkleProof(acc2.address);
-        await fjordDrop.connect(acc2).mintWhitelisted(1, proof, {
+        await fjordDrop.connect(acc2).whitelistMint(1, proof, {
           value: oneNFTPrice,
         });
         expect(await fjordDrop.balanceOf(acc2.address)).to.equal(1);
         // Counters update
         const mintCounter = await fjordDrop.mintCounter();
-        expect(mintCounter).to.equal(2);
+        expect(mintCounter).to.equal(6);
         // buyer's minted nfts amount
         const buyerNFTS = await fjordDrop.mintPerWhitelistedWallet(
           acc2.address
@@ -143,12 +166,12 @@ describe("FjordDrop", function () {
         );
         const proof = getMerkleProof(acc2.address);
         await expect(
-          fjordDrop.connect(acc2).mintWhitelisted(1, proof, {
+          fjordDrop.connect(acc2).whitelistMint(1, proof, {
             value: oneNFTPrice,
           })
         )
           .to.emit(fjordDrop, "MintedAnNFT")
-          .withArgs(acc2.address, 1);
+          .withArgs(acc2.address, 6);
         expect(await fjordDrop.balanceOf(acc2.address)).to.equal(1);
       });
       it("Whitelisted address can mint 2 and update counter", async function () {
@@ -158,13 +181,13 @@ describe("FjordDrop", function () {
         // const mroot = await fjordDrop.whiteListSaleMerkleRoot();
         // console.log("mroot", mroot);
         const proof = getMerkleProof(acc4.address);
-        await fjordDrop.connect(acc4).mintWhitelisted(2, proof, {
+        await fjordDrop.connect(acc4).whitelistMint(2, proof, {
           value: twoNFTsPrice,
         });
         expect(await fjordDrop.balanceOf(acc4.address)).to.equal(2);
         // Counter update
         const mintCounter = await fjordDrop.mintCounter();
-        expect(mintCounter).to.equal(3);
+        expect(mintCounter).to.equal(7);
         // buyer's minted nfts amount
         const buyerNFTS = await fjordDrop.mintPerWhitelistedWallet(
           acc4.address
@@ -177,7 +200,7 @@ describe("FjordDrop", function () {
         );
         const proof = getMerkleProof(notWLAcc.address);
         await expect(
-          fjordDrop.connect(notWLAcc).mintWhitelisted(2, proof, {
+          fjordDrop.connect(notWLAcc).whitelistMint(2, proof, {
             value: twoNFTsPrice,
           })
         ).to.be.revertedWith("Address is not whitelisted");
@@ -192,7 +215,7 @@ describe("FjordDrop", function () {
         console.log("totalMintedBefore mint", totalMinted);
         const proof2 = getMerkleProof(acc2.address);
         //first mint
-        await fjordDrop.connect(acc2).mintWhitelisted(2, proof2, {
+        await fjordDrop.connect(acc2).whitelistMint(2, proof2, {
           value: twoNFTsPrice,
         });
         //balance after minting
@@ -209,14 +232,14 @@ describe("FjordDrop", function () {
         expect(buyerNFTS).to.equal(2);
         //Mint exceeds max limit
         await expect(
-          fjordDrop.connect(acc2).mintWhitelisted(2, proof2, {
+          fjordDrop.connect(acc2).whitelistMint(2, proof2, {
             value: twoNFTsPrice,
           })
         ).to.revertedWith("Max mint exceeded");
         // try to mint 3 at once
         const proof3 = getMerkleProof(acc3.address);
         await expect(
-          fjordDrop.connect(acc3).mintWhitelisted(3, proof3, {
+          fjordDrop.connect(acc3).whitelistMint(3, proof3, {
             value: threeNFTsPrice,
           })
         ).to.be.revertedWith("Max mint exceeded");
@@ -261,11 +284,11 @@ describe("FjordDrop", function () {
         formatContractBalanceBeforeReceivingEther
       );
       const proof = getMerkleProof(acc2.address);
-      await fjordDrop.connect(acc2).mintWhitelisted(2, proof, {
+      await fjordDrop.connect(acc2).whitelistMint(2, proof, {
         value: twoNFTsPrice,
       });
       //testing with the non whitelisted address and Copper mint function
-      await fjordDrop.connect(acc4).mint(acc4.address);
+      await fjordDrop.connect(acc4).mint();
       //sends ether to Fjord contract address
       await acc2.sendTransaction({
         to: fjordDrop.address,
