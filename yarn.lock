@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@alchemist.wtf/token-extensions@1.3.6":
-  version "1.3.6"
-  resolved "https://registry.npmjs.org/@alchemist.wtf/token-extensions/-/token-extensions-1.3.6.tgz"
-  integrity sha512-nsKaY13iB312oIUoqkbceslg4Y9O9uYcgQTcz9RRhq97/wrHSz5r8bCOPkEuhzuoOeKGWxwkhnqq+O8iwEjiUg==
+"@alchemist.wtf/token-extensions@1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@alchemist.wtf/token-extensions/-/token-extensions-1.4.0.tgz#a4759707f1da5c69819f30a429f190f2ffe9f01b"
+  integrity sha512-peCWIG+L/oU31jAxnR5rsbG2bOc6sMiV5a7h6JrANvszLw28jEmmma5qeUYo4nFthKkHlkMq6uKCAMePZRqf4Q==
   dependencies:
     "@openzeppelin/contracts" "^4.6.0"
 
