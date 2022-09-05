@@ -12,13 +12,14 @@ describe("FjordDrop", function () {
     let oneNFTPrice = ethers.utils.parseEther("0.02");
     let twoNFTsPrice = ethers.utils.parseEther("0.04");
     let threeNFTsPrice = ethers.utils.parseEther("0.06");
-    const [owner, acc2, acc3, acc4, notWLAcc, fakeCopperAddress] =
+    let fourNFTsPrice = ethers.utils.parseEther("0.08");
+    const [owner, acc2, acc3, acc4, notWLAcc, mainnetFjordAddress] =
       await ethers.getSigners();
     const FjordDrop = await ethers.getContractFactory("FjordDrop");
     const fjordDrop = await FjordDrop.deploy(
-      "ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/",
+      "ipfs://Qmag7Hgh3C2igYajdYFtLgE132yjEgwjAda4x4HBXj8tNv/",
       `0x${root}`,
-      5
+      25
     );
     //OWNER SETS THE END TIME TO 5MIN IN THE FUTURE
     await fjordDrop.setEndDateWhitelist(60 * 5);
@@ -32,7 +33,8 @@ describe("FjordDrop", function () {
       oneNFTPrice,
       twoNFTsPrice,
       threeNFTsPrice,
-      fakeCopperAddress,
+      fourNFTsPrice,
+      mainnetFjordAddress,
     };
   }
   //DUMMY ERC20 CONTRACT
@@ -57,12 +59,12 @@ describe("FjordDrop", function () {
     it("Should deploy and set the right customBaseURI", async function () {
       const { fjordDrop } = await loadFixture(deployFjordDrop);
       expect(await fjordDrop.customBaseURI()).to.equal(
-        "ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/"
+        "ipfs://Qmag7Hgh3C2igYajdYFtLgE132yjEgwjAda4x4HBXj8tNv/"
       );
     });
-    it("Should start the mintCounter at 5", async function () {
+    it("Should start the mintCounter at 25", async function () {
       const { fjordDrop } = await loadFixture(deployFjordDrop);
-      expect(await fjordDrop.mintCounter()).to.equal(5);
+      expect(await fjordDrop.mintCounter()).to.equal(25);
     });
 
     it("Should set the right owner", async function () {
@@ -76,28 +78,28 @@ describe("FjordDrop", function () {
       it("Should revert if all tokens were minted", async function () {
         //CODE HERE
       });
-      it("Should mint one NFT via Copper's contract", async function () {
+      it("Should mint one NFT via Fjord's contract", async function () {
         //fakeCopperAddress is a random address - not whitelisted -
         //just used to impersonate Copper
-        const { fjordDrop, fakeCopperAddress } = await loadFixture(
+        const { fjordDrop, mainnetFjordAddress } = await loadFixture(
           deployFjordDrop
         );
         //given
         const { erc20Dummy } = await loadFixture(deployErc20Dummy);
-        console.log(fakeCopperAddress.address);
+        console.log(mainnetFjordAddress.address);
         await fjordDrop.setErc20TokenAddress(erc20Dummy.address);
-        await erc20Dummy.transfer(fakeCopperAddress.address, 1);
+        await erc20Dummy.transfer(mainnetFjordAddress.address, 1);
         await erc20Dummy
-          .connect(fakeCopperAddress)
+          .connect(mainnetFjordAddress)
           .approve(fjordDrop.address, 1);
         //user has erc20 tokens
-        expect(await erc20Dummy.balanceOf(fakeCopperAddress.address)).to.equal(
-          1
-        );
-        await fjordDrop.connect(fakeCopperAddress).mint();
-        expect(await erc20Dummy.balanceOf(fakeCopperAddress.address)).to.equal(
-          0
-        );
+        expect(
+          await erc20Dummy.balanceOf(mainnetFjordAddress.address)
+        ).to.equal(1);
+        await fjordDrop.connect(mainnetFjordAddress).mint();
+        expect(
+          await erc20Dummy.balanceOf(mainnetFjordAddress.address)
+        ).to.equal(0);
       });
     });
     describe("Whitelist minting", function () {
@@ -115,7 +117,7 @@ describe("FjordDrop", function () {
         const lastMintTokenId = await fjordDrop.mintCounter();
         const tokenUri = await fjordDrop.tokenURI(lastMintTokenId);
         expect(tokenUri).to.be.equal(
-          `ipfs://QmfHKiJ7o64ALtYv1uhtNLqcKXUqnug4UmwFKx8t3dAkEy/${lastMintTokenId}`
+          `ipfs://Qmag7Hgh3C2igYajdYFtLgE132yjEgwjAda4x4HBXj8tNv/${lastMintTokenId}`
         );
       });
       it("Whitelisted address can't mint if payment === price * amount", async function () {
@@ -153,7 +155,7 @@ describe("FjordDrop", function () {
         expect(await fjordDrop.balanceOf(acc2.address)).to.equal(1);
         // Counters update
         const mintCounter = await fjordDrop.mintCounter();
-        expect(mintCounter).to.equal(6);
+        expect(mintCounter).to.equal(26);
         // buyer's minted nfts amount
         const buyerNFTS = await fjordDrop.mintPerWhitelistedWallet(
           acc2.address
@@ -171,7 +173,7 @@ describe("FjordDrop", function () {
           })
         )
           .to.emit(fjordDrop, "MintedAnNFT")
-          .withArgs(acc2.address, 6);
+          .withArgs(acc2.address, 26);
         expect(await fjordDrop.balanceOf(acc2.address)).to.equal(1);
       });
       it("Whitelisted address can mint 2 and update counter", async function () {
@@ -187,7 +189,7 @@ describe("FjordDrop", function () {
         expect(await fjordDrop.balanceOf(acc4.address)).to.equal(2);
         // Counter update
         const mintCounter = await fjordDrop.mintCounter();
-        expect(mintCounter).to.equal(7);
+        expect(mintCounter).to.equal(27);
         // buyer's minted nfts amount
         const buyerNFTS = await fjordDrop.mintPerWhitelistedWallet(
           acc4.address
@@ -244,6 +246,33 @@ describe("FjordDrop", function () {
           })
         ).to.be.revertedWith("Max mint exceeded");
       });
+    });
+
+    describe("Public Mint", function () {
+      it("Reverts if all tokens were minted", async function () {
+        //IMPLEMENT
+      });
+      it("Reverts if isPublicMint is false", async function () {
+        const { fjordDrop, acc2, oneNFTPrice } = await loadFixture(
+          deployFjordDrop
+        );
+        await expect(
+          fjordDrop.connect(acc2).publicMint(1, {
+            value: oneNFTPrice,
+          })
+        ).to.be.revertedWith("FJORD_PublicMintisNotActive");
+      });
+    });
+    it("Reverts if amount is insufficient", async function () {
+      const { fjordDrop, acc2, oneNFTPrice, threeNFTsPrice } =
+        await loadFixture(deployFjordDrop);
+      await fjordDrop.setIsPublicMintActive(true);
+      await fjordDrop.setPublicMintPrice(threeNFTsPrice);
+      await expect(
+        fjordDrop.connect(acc2).publicMint(1, {
+          value: oneNFTPrice,
+        })
+      ).to.be.revertedWith("FJORD_InexactPayment()");
     });
   });
   describe("Withdrawal", function () {

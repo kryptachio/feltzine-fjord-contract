@@ -21,6 +21,7 @@ const GOERLI_RPC_URL =
 // const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x";
 const GOERLI_PRIVATE_KEY = process.env.GOERLI_PRIVATE_KEY || "0x";
 const ROPSTEN_PRIVATE_KEY = process.env.ROPSTEN_PRIVATE_KEY || "0x";
+const PRIVATE_KEY = process.env.ROPSTEN_PRIVATE_KEY || "0x";
 const ETHERSCAN_API_KEY =
   process.env.ETHERSCAN_API_KEY || "Your etherscan API key";
 const REPORT_GAS = process.env.REPORT_GAS || false;
@@ -47,7 +48,7 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       url: MAINNET_RPC_URL,
-      // accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
+      accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
       chainId: 1,
     },
   },
