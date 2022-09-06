@@ -48,14 +48,17 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     uint16 public constant TOTAL_SUPPLY = 525;
     string public customBaseURI;
     string public contractURI = "ipfs://QmdyYCtUsVsC5ymr7b4txQ6hXHpLXtJU7JXCDuHEJdXnRe";
+    //TODO - remove mainnetFjordAddress
     address private mainnetFjordAddress = 0x6f435948d9ad4cA0a73a3257743528469899ceec;
     uint256 public whitelistEndDate;
     uint256 private constant PRICE_PER_WHITELIST_NFT = 0.02 ether;
     bytes32 public whiteListSaleMerkleRoot;
     uint32 private constant MAX_MINT_PER_WHITELIST_WALLET = 2;
     mapping(address => uint32) public mintPerWhitelistedWallet;
+    //TODO - make this a public variable and add getter
     //TODO, minor but should we default to something? otherwise we try to do a calculation on undefined
-    uint256 private PRICE_PER_PUBLIC_MINT; 
+    uint256 private PRICE_PER_PUBLIC_MINT;
+    //TODO -  remove ONLY_MINT_OWNER; see suggested solution in before transer
     enum MintPhase {
         ONLY_MINT_OWNER,
         NOT_ACTIVE,
@@ -63,6 +66,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         FJORD,
         PUBLIC
     }
+    //TODO - make this a public variable and add getter
     MintPhase stage = MintPhase.ONLY_MINT_OWNER;
 
     /*//////////////////////////////////////////////////////////////
@@ -101,7 +105,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
 //////////////////////////////////////////////////////////////*/
 
     /// @notice set _time in  Unix Time Stamp to end the whitelist sale
-    //TODO - add onlyOwner
+    //TODO - add onlyOwner and make external rather than public
     function setEndDateWhitelist(uint256 time_) public {
         whitelistEndDate = block.timestamp + time_;
     }
@@ -110,12 +114,14 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         customBaseURI = customBaseURI_;
     }
 
+    //TODO - remove setFjordContractAddress
     function setFjordContractAddress(address mainnetFjordAddress_) external onlyOwner {
         mainnetFjordAddress = mainnetFjordAddress_;
     }
 
     //@notice: owner set the different states of the minting phase
     // 0 = NOT_STARTED, 1 = WHITELIST, 2 = FJORD, 3 = PUBLIC
+    //TODO - make external rather than public
     function setMintStage(MintPhase val_) public onlyOwner {
         stage = val_;
     }
@@ -151,6 +157,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         payable
         isValidMerkleProof(merkleProof, whiteListSaleMerkleRoot)
     {
+        //TODO - add cap for whitelist (WHITELIST_ALLOCATION) and make sure mintCounter is less than WHITELIST_ALLOCATION
         //cache the current minted amount by the wallet address
         uint256 totalMinted = mintPerWhitelistedWallet[msg.sender];
         if (msg.value != PRICE_PER_WHITELIST_NFT * amount) {
@@ -201,11 +208,14 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         require(stage != MintPhase.NOT_ACTIVE, "Minting is not active");
         // check if it's a mint through the Fjord's contract
         if (stage == MintPhase.FJORD) {
+            //TODO remove this require around mainnetFjordAddress as it serves no purpose 
             require(to == mainnetFjordAddress, "Invalid fjord address");
             Erc721BurningErc20OnMint._beforeTokenTransfer(from, to, amount);
         } else if (stage == MintPhase.PUBLIC || stage == MintPhase.WHITELIST) {
             ERC721._beforeTokenTransfer(from, to, amount);
         }
+        // TODO add `else if (mint_counter == 0) {ERC721._beforeTokenTransfer(from, to, amount)}`
+        // to account for initial mint of 25 upon contract deployment
     }
 
     /*//////////////////////////////////////////////////////////////
