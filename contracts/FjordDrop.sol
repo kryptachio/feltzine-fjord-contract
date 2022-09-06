@@ -22,7 +22,7 @@ import "@alchemist.wtf/token-extensions/contracts/Erc721BurningErc20OnMint.sol";
  */
 
 contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
-/*//////////////////////////////////////////////////////////////
+    /*//////////////////////////////////////////////////////////////
                         ERRORS
 //////////////////////////////////////////////////////////////*/
 
@@ -34,38 +34,41 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     error FJORD_PublicMintisNotActive();
     error FJORD_FjordIsNotActive();
 
-/*//////////////////////////////////////////////////////////////
+    /*//////////////////////////////////////////////////////////////
                         EVENTS
 //////////////////////////////////////////////////////////////*/
 
     event MintedAnNFT(address indexed to, uint256 indexed tokenId);
 
-/*//////////////////////////////////////////////////////////////
+    /*//////////////////////////////////////////////////////////////
                         STATE VARIABLES
 //////////////////////////////////////////////////////////////*/
 
     uint16 public mintCounter;
     uint16 public constant TOTAL_SUPPLY = 525;
     string public customBaseURI;
-    string public contractURI =
-        "ipfs://QmdyYCtUsVsC5ymr7b4txQ6hXHpLXtJU7JXCDuHEJdXnRe";
-    address private mainnetFjordAddress =
-        0x6f435948d9ad4cA0a73a3257743528469899ceec;
+    string public contractURI = "ipfs://QmdyYCtUsVsC5ymr7b4txQ6hXHpLXtJU7JXCDuHEJdXnRe";
+    //TODO - remove mainnetFjordAddress
+    address private mainnetFjordAddress = 0x6f435948d9ad4cA0a73a3257743528469899ceec;
     uint256 public whitelistEndDate;
     uint256 private constant PRICE_PER_WHITELIST_NFT = 0.02 ether;
     bytes32 public whiteListSaleMerkleRoot;
     uint32 private constant MAX_MINT_PER_WHITELIST_WALLET = 2;
     mapping(address => uint32) public mintPerWhitelistedWallet;
+    //TODO - make this a public variable and add getter
     uint256 private PRICE_PER_PUBLIC_MINT;
+    //TODO - ONLY_MINT_OWNER
     enum MintPhase {
-    ONLY_MINT_OWNER,    
-    NOT_ACTIVE,
-    WHITELIST,
-    FJORD,
-    PUBLIC
-}
+        ONLY_MINT_OWNER,
+        NOT_ACTIVE,
+        WHITELIST,
+        FJORD,
+        PUBLIC
+    }
+    //TODO - make this a public variable and add getter
     MintPhase stage = MintPhase.ONLY_MINT_OWNER;
-/*//////////////////////////////////////////////////////////////
+
+    /*//////////////////////////////////////////////////////////////
                         INIT/CONSTRUCTOR
 //////////////////////////////////////////////////////////////*/
     constructor(
@@ -75,7 +78,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     ) ERC721("Fjord Collection #1", "FJORD") {
         customBaseURI = customBaseURI_;
         whiteListSaleMerkleRoot = whiteListSaleMerkleRoot_;
-        for (uint i = 0; i < mintQtyToOwner; i++) {
+        for (uint256 i = 0; i < mintQtyToOwner; i++) {
             unchecked {
                 mintCounter++;
             }
@@ -84,26 +87,24 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         }
     }
 
-/*//////////////////////////////////////////////////////////////
+    /*//////////////////////////////////////////////////////////////
                         MODIFIERS
 //////////////////////////////////////////////////////////////*/
 
     modifier isValidMerkleProof(bytes32[] calldata _proof, bytes32 root) {
         require(
-            MerkleProof.verify(
-                _proof,
-                root,
-                keccak256(abi.encodePacked(msg.sender))
-            ),
+            MerkleProof.verify(_proof, root, keccak256(abi.encodePacked(msg.sender))),
             "Address is not whitelisted"
         );
         _;
     }
-/*//////////////////////////////////////////////////////////////
+
+    /*//////////////////////////////////////////////////////////////
                         ONLY OWNER
 //////////////////////////////////////////////////////////////*/
 
     /// @notice set _time in  Unix Time Stamp to end the whitelist sale
+    //TODO - add onlyOwner and make external rather than public
     function setEndDateWhitelist(uint256 time_) public {
         whitelistEndDate = block.timestamp + time_;
     }
@@ -112,28 +113,33 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         customBaseURI = customBaseURI_;
     }
 
+    //TODO - remove setFjordContractAddress
     function setFjordContractAddress(address mainnetFjordAddress_) external onlyOwner {
         mainnetFjordAddress = mainnetFjordAddress_;
     }
+
     //@notice: owner set the different states of the minting phase
     // 0 = NOT_STARTED, 1 = WHITELIST, 2 = FJORD, 3 = PUBLIC
+    //TODO - make external rather than public
     function setMintStage(MintPhase val_) public onlyOwner {
         stage = val_;
     }
+
     function setPublicMintPrice(uint256 price) external onlyOwner {
         PRICE_PER_PUBLIC_MINT = price;
     }
 
-/*//////////////////////////////////////////////////////////////
+    /*//////////////////////////////////////////////////////////////
                             MINT
 //////////////////////////////////////////////////////////////*/
 
     /// @notice mint implementation interfacing w Erc721BurningErc20OnMint contract
 
     function mint() public override nonReentrant returns (uint256) {
+        //TODO might be safer to do something like `mintCounter >= TOTAL_SUPPLY`? there might be a one-off error too
         if (mintCounter == TOTAL_SUPPLY) {
             revert FJORD_TotalMinted();
-        }  else  {
+        } else {
             unchecked {
                 mintCounter++;
             }
@@ -150,6 +156,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         payable
         isValidMerkleProof(merkleProof, whiteListSaleMerkleRoot)
     {
+        //TODO - add cap for whitelist (WHITELIST_ALLOCATION) and make sure mintCounter is less than WHITELIST_ALLOCATION
         //cache the current minted amount by the wallet address
         uint256 totalMinted = mintPerWhitelistedWallet[msg.sender];
         if (msg.value != PRICE_PER_WHITELIST_NFT * amount) {
@@ -157,10 +164,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         } else if (block.timestamp >= whitelistEndDate) {
             revert FJORD_WhitelistMintEnded();
         } else {
-            require(
-                totalMinted + amount <= MAX_MINT_PER_WHITELIST_WALLET,
-                "Max mint exceeded"
-            );
+            require(totalMinted + amount <= MAX_MINT_PER_WHITELIST_WALLET, "Max mint exceeded");
             uint256 i;
             for (i = 0; i < amount; i++) {
                 unchecked {
@@ -175,9 +179,9 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         }
     }
 
-    
     function publicMint(uint256 _amount) public payable {
-    if (mintCounter == TOTAL_SUPPLY) {
+        //TODO would be safer to do `mintCounter >= TOTAL_SUPPLY`
+        if (mintCounter == TOTAL_SUPPLY) {
             revert FJORD_TotalMinted();
         } else if (msg.value != PRICE_PER_PUBLIC_MINT * _amount) {
             revert FJORD_InexactPayment();
@@ -194,7 +198,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         }
     }
 
-function _beforeTokenTransfer(
+    function _beforeTokenTransfer(
         address from,
         address to,
         uint256 amount
@@ -202,14 +206,17 @@ function _beforeTokenTransfer(
         require(stage != MintPhase.NOT_ACTIVE, "Minting is not active");
         // check if it's a mint through the Fjord's contract
         if (stage == MintPhase.FJORD) {
+            //TODO remove this require around mainnetFjordAddress as it serves no purpose 
             require(to == mainnetFjordAddress, "Invalid fjord address");
             Erc721BurningErc20OnMint._beforeTokenTransfer(from, to, amount);
-        } else if(stage == MintPhase.PUBLIC || stage == MintPhase.WHITELIST) {
+        } else if (stage == MintPhase.PUBLIC || stage == MintPhase.WHITELIST) {
             ERC721._beforeTokenTransfer(from, to, amount);
         }
+        // TODO add `else if (mint_counter == 0) {ERC721._beforeTokenTransfer(from, to, amount)}`
+        // to account for initial mint of 25 upon contract deployment
     }
 
-/*//////////////////////////////////////////////////////////////
+    /*//////////////////////////////////////////////////////////////
                             READ
 //////////////////////////////////////////////////////////////*/
 
@@ -217,12 +224,7 @@ function _beforeTokenTransfer(
         return customBaseURI;
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override
-        returns (string memory)
-    {
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
         return string(abi.encodePacked(super.tokenURI(tokenId)));
     }
 
@@ -252,6 +254,7 @@ function _beforeTokenTransfer(
     address private constant feltzine = 0x5e080D8b14c1DA5936509c2c9EF0168A19304202;
     address private constant artist = 0xb012A1bDCA34E1d0c2267bb50e6c53C8042eB4b6;
     address private constant dev = 0x52aA63A67b15e3C2F201c9422cAC1e81bD6ea847;
+
     //@notice : withdraws the royalties to the addresses above
     function withdraw() public nonReentrant onlyOwner {
         uint256 balance = address(this).balance;
@@ -259,6 +262,7 @@ function _beforeTokenTransfer(
         Address.sendValue(payable(artist), (balance * 375) / 1000);
         Address.sendValue(payable(dev), (balance * 250) / 1000);
     }
+
     //Fallback
     receive() external payable {}
 }
