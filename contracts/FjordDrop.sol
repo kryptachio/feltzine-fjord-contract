@@ -130,6 +130,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     /// @notice mint implementation interfacing w Erc721BurningErc20OnMint contract
 
     function mint() public override nonReentrant returns (uint256) {
+        //TODO might be safer to do something like `mintCounter >= TOTAL_SUPPLY`? there might be a one-off error too
         if (mintCounter == TOTAL_SUPPLY) {
             revert FJORD_TotalMinted();
         } else {
