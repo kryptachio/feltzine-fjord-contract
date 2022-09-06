@@ -21,6 +21,7 @@ import "@alchemist.wtf/token-extensions/contracts/Erc721BurningErc20OnMint.sol";
  @dev javvvs.eth
  */
 
+
 contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
 /*//////////////////////////////////////////////////////////////
                         ERRORS
