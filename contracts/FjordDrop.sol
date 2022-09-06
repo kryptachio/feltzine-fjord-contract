@@ -44,7 +44,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
 //////////////////////////////////////////////////////////////*/
 
     uint16 public mintCounter;
-    uint16 public constant TOTAL_SUPPLY = 500;
+    uint16 public constant TOTAL_SUPPLY = 525;
     string public customBaseURI;
     string public contractURI =
         "ipfs://QmdyYCtUsVsC5ymr7b4txQ6hXHpLXtJU7JXCDuHEJdXnRe";
@@ -245,7 +245,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         override
         returns (address receiver, uint256 royaltyAmount)
     {
-        return (address(this), (salePrice * 15) / 100);
+        return (address(this), (salePrice * 10) / 100);
     }
 
     //PAYOUT ADDRESSES
