@@ -56,8 +56,9 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     uint32 private constant MAX_MINT_PER_WHITELIST_WALLET = 2;
     mapping(address => uint32) public mintPerWhitelistedWallet;
     //TODO - make this a public variable and add getter
+    //TODO, minor but should we default to something? otherwise we try to do a calculation on undefined
     uint256 private PRICE_PER_PUBLIC_MINT;
-    //TODO -  ONLY_MINT_OWNER
+    //TODO -  remove ONLY_MINT_OWNER; see suggested solution in before transer
     enum MintPhase {
         ONLY_MINT_OWNER,
         NOT_ACTIVE,
@@ -165,6 +166,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
             revert FJORD_WhitelistMintEnded();
         } else {
             require(totalMinted + amount <= MAX_MINT_PER_WHITELIST_WALLET, "Max mint exceeded");
+            //TODO do we need to require if `mintCounter + amount` is more than total supply? otherwise we'll go over
             uint256 i;
             for (i = 0; i < amount; i++) {
                 unchecked {
@@ -180,7 +182,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     }
 
     function publicMint(uint256 _amount) public payable {
-        //TODO would be safer to do `mintCounter >= TOTAL_SUPPLY`
+        //TODO what if mintCounter is 500 and _amount is 1000?
         if (mintCounter == TOTAL_SUPPLY) {
             revert FJORD_TotalMinted();
         } else if (msg.value != PRICE_PER_PUBLIC_MINT * _amount) {
