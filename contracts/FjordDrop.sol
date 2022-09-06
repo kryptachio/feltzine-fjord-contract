@@ -159,6 +159,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
             revert FJORD_WhitelistMintEnded();
         } else {
             require(totalMinted + amount <= MAX_MINT_PER_WHITELIST_WALLET, "Max mint exceeded");
+            //TODO do we need to require if `mintCounter + amount` is more than total supply? otherwise we'll go over
             uint256 i;
             for (i = 0; i < amount; i++) {
                 unchecked {
