@@ -104,7 +104,9 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
                         ONLY OWNER
 //////////////////////////////////////////////////////////////*/
 
+
     /// @notice set _time in  Unix Time Stamp to end the whitelist sale
+    //TODO - add onlyOwner
     function setEndDateWhitelist(uint256 time_) public {
         whitelistEndDate = block.timestamp + time_;
     }
