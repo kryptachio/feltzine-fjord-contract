@@ -32,6 +32,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     error FJORD_WhitelistMaxSupplyExceeded();
     error FJORD_WhitelistMintEnded();
     error FJORD_PublicMintisNotActive();
+    error FJORD_FjordIsNotActive();
 
 /*//////////////////////////////////////////////////////////////
                         EVENTS
@@ -55,14 +56,18 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     bytes32 public whiteListSaleMerkleRoot;
     uint32 private constant MAX_MINT_PER_WHITELIST_WALLET = 2;
     mapping(address => uint32) public mintPerWhitelistedWallet;
-
     uint256 private PRICE_PER_PUBLIC_MINT;
-    bool public isPublicMintActive;
-
+    enum MintPhase {
+    ONLY_MINT_OWNER,    
+    NOT_ACTIVE,
+    WHITELIST,
+    FJORD,
+    PUBLIC
+}
+    MintPhase stage = MintPhase.ONLY_MINT_OWNER;
 /*//////////////////////////////////////////////////////////////
                         INIT/CONSTRUCTOR
 //////////////////////////////////////////////////////////////*/
-
     constructor(
         string memory customBaseURI_,
         bytes32 whiteListSaleMerkleRoot_,
@@ -94,8 +99,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         );
         _;
     }
-
-    /*//////////////////////////////////////////////////////////////
+/*//////////////////////////////////////////////////////////////
                         ONLY OWNER
 //////////////////////////////////////////////////////////////*/
 
@@ -111,14 +115,11 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     function setFjordContractAddress(address mainnetFjordAddress_) external onlyOwner {
         mainnetFjordAddress = mainnetFjordAddress_;
     }
-
-    function setIsPublicMintActive(bool isPublicMintActive_)
-        external
-        onlyOwner
-    {
-        isPublicMintActive = isPublicMintActive_;
+    //@notice: owner set the different states of the minting phase
+    // 0 = NOT_STARTED, 1 = WHITELIST, 2 = FJORD, 3 = PUBLIC
+    function setMintStage(MintPhase val_) public onlyOwner {
+        stage = val_;
     }
-
     function setPublicMintPrice(uint256 price) external onlyOwner {
         PRICE_PER_PUBLIC_MINT = price;
     }
@@ -132,7 +133,7 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     function mint() public override nonReentrant returns (uint256) {
         if (mintCounter == TOTAL_SUPPLY) {
             revert FJORD_TotalMinted();
-        } else {
+        }  else  {
             unchecked {
                 mintCounter++;
             }
@@ -174,12 +175,9 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         }
     }
 
-    /// @notice public mint implementation.
-    /// @dev max mint per wallet is 4
+    
     function publicMint(uint256 _amount) public payable {
-        if (!isPublicMintActive) {
-            revert FJORD_PublicMintisNotActive();
-        } else if (mintCounter == TOTAL_SUPPLY) {
+    if (mintCounter == TOTAL_SUPPLY) {
             revert FJORD_TotalMinted();
         } else if (msg.value != PRICE_PER_PUBLIC_MINT * _amount) {
             revert FJORD_InexactPayment();
@@ -196,15 +194,17 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
         }
     }
 
-    function _beforeTokenTransfer(
+function _beforeTokenTransfer(
         address from,
         address to,
         uint256 amount
     ) internal virtual override(Erc721BurningErc20OnMint) {
-        // check if it's a mint through the Copper's contract
-        if (to == mainnetFjordAddress) {
+        require(stage != MintPhase.NOT_ACTIVE, "Minting is not active");
+        // check if it's a mint through the Fjord's contract
+        if (stage == MintPhase.FJORD) {
+            require(to == mainnetFjordAddress, "Invalid fjord address");
             Erc721BurningErc20OnMint._beforeTokenTransfer(from, to, amount);
-        } else {
+        } else if(stage == MintPhase.PUBLIC || stage == MintPhase.WHITELIST) {
             ERC721._beforeTokenTransfer(from, to, amount);
         }
     }
