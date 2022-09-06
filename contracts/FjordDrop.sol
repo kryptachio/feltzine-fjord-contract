@@ -54,7 +54,8 @@ contract FjordDrop is Erc721BurningErc20OnMint, ReentrancyGuard, IERC2981 {
     bytes32 public whiteListSaleMerkleRoot;
     uint32 private constant MAX_MINT_PER_WHITELIST_WALLET = 2;
     mapping(address => uint32) public mintPerWhitelistedWallet;
-    uint256 private PRICE_PER_PUBLIC_MINT;
+    //TODO, minor but should we default to something? otherwise we try to do a calculation on undefined
+    uint256 private PRICE_PER_PUBLIC_MINT; 
     enum MintPhase {
         ONLY_MINT_OWNER,
         NOT_ACTIVE,
